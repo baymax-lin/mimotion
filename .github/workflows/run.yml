@@ -47,6 +47,9 @@ jobs:
           $RUN_RESULT
           "
           echo "$FINAL_RESULT"
+
+          CURRENT_DATE=$(TZ=Asia/Shanghai date '+%Y-%m-%d')
+          echo "CURRENT_DATE=$CURRENT_DATE" >> $GITHUB_OUTPUT
           
           # 将结果写入步骤输出（支持多行内容，后续邮件直接引用）
           echo "FINAL_RESULT<<EOF" >> $GITHUB_OUTPUT
@@ -73,7 +76,7 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           # 邮件标题（可自定义，添加日期更易识别）
-          subject: 步数任务执行通知（$(TZ=Asia/Shanghai date '+%Y-%m-%d')）
+          subject: 步数任务执行通知（${{ steps.run_step.outputs.CURRENT_DATE }}）
           # 邮件正文：引用上一步捕获的运行结果
           body: ${{ steps.run_step.outputs.FINAL_RESULT }}
           to: ${{ secrets.EMAIL_TO }}
