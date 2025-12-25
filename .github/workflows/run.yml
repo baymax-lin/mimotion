@@ -45,6 +45,8 @@ jobs:
           执行详情：
           $RUN_RESULT
           "
+          echo "$FINAL_RESULT"
+          
           # 将结果写入步骤输出（支持多行内容，后续邮件直接引用）
           echo "FINAL_RESULT<<EOF" >> $GITHUB_OUTPUT
           echo "$FINAL_RESULT" >> $GITHUB_OUTPUT
