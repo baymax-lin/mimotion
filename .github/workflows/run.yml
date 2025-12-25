@@ -25,6 +25,7 @@ jobs:
           python-version: "3.10"
           
       - name: 开始
+        id: run_step # 给步骤设置ID，用于后续引用运行结果
         env:
             CONFIG: ${{ secrets.CONFIG }}
             AES_KEY: ${{ secrets.AES_KEY }}
