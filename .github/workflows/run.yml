@@ -2,7 +2,7 @@ name: 刷步数
 
 on:
   schedule:
-    - cron: '42 10,16 * * *'
+    - cron: '42 10,12 * * *'
   workflow_dispatch:
 
 jobs:
@@ -30,8 +30,29 @@ jobs:
             AES_KEY: ${{ secrets.AES_KEY }}
         run: |
           pip3 install requests pytz pycryptodome
-          python3 main.py
+          # python3 main.py
+          
+          # 捕获脚本运行结果（包括正常输出和异常信息），同时保留原始格式
+          RUN_RESULT=$(python3 main.py 2>&1)
+          # 捕获执行状态（0=成功，非0=失败）
+          EXIT_CODE=$?
+          # 组装更友好的运行结果（添加执行时间、状态说明）
+          FINAL_RESULT="
+          【任务执行报告】
+          执行时间：$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S')
+          触发方式：${{ github.event_name }}
+          执行状态：$(if [ $EXIT_CODE -eq 0 ]; then echo "部署成功"; else echo "部署失败"; fi)
+          执行详情：
+          $RUN_RESULT
+          "
+          # 将结果写入步骤输出（支持多行内容，后续邮件直接引用）
+          echo "FINAL_RESULT<<EOF" >> $GITHUB_OUTPUT
+          echo "$FINAL_RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          # 若脚本执行失败，终止工作流（可选，根据需求开启/关闭）
+          # if [ $EXIT_CODE -ne 0 ]; then exit $EXIT_CODE; fi
 
+          
       - name: persist tokens
         run: |
           git config user.name github-actions
@@ -39,3 +60,19 @@ jobs:
           git add .
           git commit -m "persist tokens trigger by ${{ github.event_name }}"
           git push origin master
+          
+      - name: Send Mail
+        uses: dawidd6/action-send-mail@v2
+        if: always()
+        with:
+          server_address: smtp.163.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          # 邮件标题（可自定义，添加日期更易识别）
+          subject: 步数任务执行通知（$(TZ=Asia/Shanghai date '+%Y-%m-%d')）
+          # 邮件正文：引用上一步捕获的运行结果
+          body: ${{ steps.run_step.outputs.FINAL_RESULT }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: ${{ secrets.EMAIL_USERNAME }}
+          content_type: text/plain
